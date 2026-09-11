@@ -1,6 +1,6 @@
 Package: AnnotatedBCGEData
 Title: 100+ Curated Breast Cancer Gene Expression Data sets
-Version: 0.99.10
+Version: 0.99.11
 Date: 2025-10-16
 Authors@R: 
     c(person("Heidi", "Steadman", 
@@ -46,7 +46,6 @@ biocViews:
     TissueMicroarrayData
 Encoding: UTF-8
 Roxygen: list(markdown=TRUE)
-RoxygenNote: 7.3.3
 Suggests: 
     BiocStyle,
     knitr,
@@ -56,7 +55,7 @@ Suggests:
     testthat (>= 3.0.0)
 VignetteBuilder: knitr
 Depends: 
-    R (>= 4.5)
+    R (>= 4.6)
 Imports: 
     SummarizedExperiment,
     stringr,
@@ -70,3 +69,4 @@ Imports:
     rlang
 LazyData: false
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.1.0

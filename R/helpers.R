@@ -4,9 +4,7 @@
 #' @importFrom readr read_tsv
 #' @importFrom tibble column_to_rownames
 #' @importFrom stringr str_starts
-#' @importFrom readr read_tsv
 #' @importFrom SummarizedExperiment SummarizedExperiment
-#' @importFrom tibble column_to_rownames
 
 utils::globalVariables(c(
     "doi",
@@ -45,31 +43,19 @@ tryPath <- function(path) {
 }
 
 
-## checks if there needs to be sleep time between requests
-tryRequestConcept <- function(conceptDOI) {
+## checks a Zenodo record either by concept DOI or by specific record DOI.
+## Both tryRequestConcept() and tryRequestRecord() used to be separate,
+## near-identical functions; by_concept picks which zen4R method is used.
+tryRequestZen <- function(doi, by_concept = TRUE) {
     tryCatch(
         {
             zen <- ZenodoManager$new()
-            rec <- zen$getRecordByConceptDOI(conceptDOI)
-            if (!inherits(rec, "ZenodoRecord")) {
-                stop()
+            rec <- if (by_concept) {
+                zen$getRecordByConceptDOI(doi)
+            } else {
+                zen$getRecordByDOI(doi)
             }
-            return(list(rec, TRUE))
-        },
-        
-        error = function(cond) {
-            noRec <- "not a record"
-            return(list(noRec, FALSE))
-        }
-    )
-}
-
-tryRequestRecord <- function(recDOI) {
-    tryCatch(
-        {
-            zen <- ZenodoManager$new()
-            rec <- zen$getRecordByDOI(recDOI)
-            if(!inherits(rec, "ZenodoRecord")) {
+            if (!inherits(rec, "ZenodoRecord")) {
                 stop()
             }
             return(list(rec, TRUE))
@@ -102,6 +88,33 @@ tryGetVersions <- function(rec) {
 }
 
 
+## repeatedly calls a "try" function (one that returns list(result, success))
+## until it succeeds, sleeping between attempts to respect Zenodo's rate
+## limits. This replaces three copies of the same while-loop that used to
+## live in downloadZenFile() and checkVersions().
+retryWithBackoff <- function(FUN, ..., max_sleep = 60, sleep_step = 15) {
+    attempt <- FUN(...)
+    sleep_time <- 0
+    
+    while (!isTRUE(attempt[[2]])) {
+        if (sleep_time >= max_sleep) {
+            stop("Maximum sleep exceeded")
+        }
+        Sys.sleep(sleep_step)
+        message("####################################\n",
+                "Please wait...\n", "Due to Zenodo limitations, we are",
+                " only allowed to submit a certain number of requests ",
+                "per minute. To avoid exceeding those limits, we are ",
+                "pausing for 15 seconds.\n",
+                "####################################")
+        sleep_time <- sleep_time + sleep_step
+        attempt <- FUN(...)
+    }
+    
+    return(attempt[[1]])
+}
+
+
 ## creates file cache on user's machine
 makeCache <- function(cacheDirPath) {
     if(!file.exists(cacheDirPath)) {
@@ -118,85 +131,21 @@ makeCache <- function(cacheDirPath) {
 
 ## downloads file from Zenodo via zen4R package
 downloadZenFile <- function(conceptDOI, filepath, v=NULL) {
-    recCheck <- tryRequestConcept(conceptDOI)
-    record <- recCheck[[1]]
-    CHECK <- recCheck[[2]]
-    sleep_time <- 0
-    
-    while (CHECK != TRUE) {
-        if (sleep_time >= 60) {
-            stop("Maximum sleep exceeded")
-        }
-        Sys.sleep(15)
-        message("####################################\n",
-                       "Please wait...\n", "Due to Zenodo limitations, we are",
-                       " only allowed to submit a certain number of requests ",
-                       "per minute. To avoid exceeding those limits, we are ",
-                       "pausing for 15 seconds.\n",
-                       "####################################")
-        sleep_time <- sleep_time + 15
-        recCheck <- tryRequestConcept(conceptDOI)
-        record <- recCheck[[1]]
-        CHECK <- recCheck[[2]]
-    }
+    record <- retryWithBackoff(tryRequestZen, conceptDOI, by_concept = TRUE)
     
     if (!is.null(v)) {
-        version_attempt <- tryGetVersions(record)
-        version_CHECK <- version_attempt[[2]]
-        versions <- version_attempt[[1]]
-        sleep_time <- 0
-        
-        while (version_CHECK != TRUE) {
-            if (sleep_time >= 60) {
-                stop("Maximum sleep time exceeded")
-            }
-            Sys.sleep(15)
-            message("####################################\n",
-                           "Please wait...\n", "Due to Zenodo limitations, we are",
-                           " only allowed to submit a certain number of requests ",
-                           "per minute. To avoid exceeding those limits, we are ",
-                           "pausing for 15 seconds.\n",
-                           "####################################")
-            sleep_time <- sleep_time + 15
-            version_attempt <- tryGetVersions(record)
-            version_CHECK <- version_attempt[[2]]
-            versions <- version_attempt[[1]]
-        }
+        versions <- retryWithBackoff(tryGetVersions, record)
         recDOIs <- versions %>%
             dplyr::pull(doi)
         
-        if (v>length(recDOIs)) {
+        if (v > length(recDOIs)) {
             stop("Either the requested version of the data does not",
-                        " exist, or there was a syntax error. Try passing the",
-                        " version as an int.")
+                 " exist, or there was a syntax error. Try passing the",
+                 " version as an int.")
         }
         
         newDOI <- recDOIs[v]
-        recAttempt <- tryRequestRecord(newDOI)
-        new_rec <- recAttempt[[1]]
-        CHECK <- recAttempt[[2]]
-        sleep_time <- 0
-        
-        while (CHECK != TRUE) {
-            if (sleep_time >= 60) {
-                stop("Maximum sleep exceeded")
-            }
-            Sys.sleep(15)
-            message("####################################\n",
-                           "Please wait...\n", "Due to Zenodo limitations, we are",
-                           " only allowed to submit a certain number of requests ",
-                           "per minute. To avoid exceeding those limits, we are ",
-                           "pausing for 15 seconds.\n",
-                           "####################################")
-            sleep_time <- sleep_time + 15
-            recAttempt <- tryRequestRecord(newDOI)
-            new_rec <- recAttempt[[1]]
-            CHECK <- recAttempt[[2]]
-        }
-        
-        new_rec$downloadFiles(path=filepath, quiet=TRUE)
-        return()
-        
+        record <- retryWithBackoff(tryRequestZen, newDOI, by_concept = FALSE)
     }
     
     record$downloadFiles(path=filepath, quiet=TRUE)
@@ -228,7 +177,7 @@ chooseVersion <- function(datasetID, cacheDirPath, v, version, conceptDOI) {
     if (!dir.exists(dir_path)) {
         dir.create(dir_path)
         message("Either the data was not found in the cache or a ",
-                    "different version was requested. Downloading now.")
+                "different version was requested. Downloading now.")
         downloadZenFile(conceptDOI, dir_path, v)
     }
     
@@ -243,55 +192,13 @@ chooseVersion <- function(datasetID, cacheDirPath, v, version, conceptDOI) {
 
 ## function for checking most recent version of zen file
 checkVersions <- function(conceptDOI) {
-    recCheck <- tryRequestConcept(conceptDOI)
-    rec <- recCheck[[1]]
-    CHECK <- recCheck[[2]]
-    sleep_time <- 0
-    
-    while (CHECK != TRUE) {
-        if (sleep_time >= 60) {
-            stop("Maximum sleep exceeded")
-        }
-        Sys.sleep(15)
-        message("####################################\n",
-                       "Please wait...\n", "Due to Zenodo limitations, we are",
-                       " only allowed to submit a certain number of requests ",
-                       "per minute. To avoid exceeding those limits, we are ",
-                       "pausing for 15 seconds.\n",
-                       "####################################")
-        sleep_time <- sleep_time + 15
-        recCheck <- tryRequestConcept(conceptDOI)
-        rec <- recCheck[[1]]
-        CHECK <- recCheck[[2]]
-    }
-    
-    version_attempt <- tryGetVersions(rec)
-    version_CHECK <- version_attempt[[2]]
-    versions <- version_attempt[[1]]
-    sleep_time <- 0
-    
-    while (version_CHECK != TRUE) {
-        if (sleep_time >= 60) {
-            stop("Maximum sleep time exceeded")
-        }
-        Sys.sleep(15)
-        message("####################################\n",
-                       "Please wait...\n", "Due to Zenodo limitations, we are",
-                       " only allowed to submit a certain number of requests ",
-                       "per minute. To avoid exceeding those limits, we are ",
-                       "pausing for 15 seconds.\n",
-                       "####################################")
-        sleep_time <- sleep_time + 15
-        version_attempt <- tryGetVersions(rec)
-        version_CHECK <- version_attempt[[2]]
-        versions <- version_attempt[[1]]
-    }
+    rec <- retryWithBackoff(tryRequestZen, conceptDOI, by_concept = TRUE)
+    versions <- retryWithBackoff(tryGetVersions, rec)
     
     versions <- versions %>%
         dplyr::pull(version)
     max_vers <- max(versions)
     return(max_vers)
-    
 }
 
 
@@ -342,9 +249,7 @@ makeSummarizedExperiment <- function(expressions, features, meta) {
 searchFields <- function(code, df) {
     df_searched <- filter(df, NCIT_field_code %in% code) %>%
         select(dataset, orig_field, NCIT_field_code) %>%
-        rename(Dataset_ID=dataset) %>%
-        rename(Field=orig_field) %>%
-        rename(Code=NCIT_field_code) %>%
+        rename(Dataset_ID = dataset, Field = orig_field, Code = NCIT_field_code) %>%
         distinct()
     return (df_searched)
 }
@@ -353,11 +258,8 @@ searchFields <- function(code, df) {
 searchValues <- function(code, df) {
     df_searched <- filter(df, NCIT_value_code %in% code) %>%
         select(dataset, orig_field, NCIT_field_code, orig_values, NCIT_value_code) %>%
-        rename(Dataset_ID=dataset) %>%
-        rename(Field=orig_field) %>%
-        rename(Field_Code=NCIT_field_code) %>%
-        rename(Original_Value=orig_values) %>%
-        rename(Code=NCIT_value_code) %>%
+        rename(Dataset_ID = dataset, Field = orig_field, Field_Code = NCIT_field_code,
+               Original_Value = orig_values, Code = NCIT_value_code) %>%
         distinct()
     return (df_searched)
 }

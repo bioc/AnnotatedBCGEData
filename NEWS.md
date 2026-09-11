@@ -26,3 +26,7 @@
 
 # AnnotatedBCGEData 0.99.10
 * added unit tests for major functions
+
+# AnnotatedBCGEData 0.99.11
+* updated R version dependency
+* improved code quality of helper functions

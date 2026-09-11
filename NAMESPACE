@@ -9,18 +9,24 @@ import(cli)
 import(rlang)
 importFrom(BiocFileCache,BiocFileCache)
 importFrom(SummarizedExperiment,SummarizedExperiment)
-importFrom(dplyr,"%>%")
-importFrom(dplyr,bind_rows)
-importFrom(dplyr,distinct)
-importFrom(dplyr,filter)
-importFrom(dplyr,pull)
-importFrom(dplyr,rename)
-importFrom(dplyr,select)
+importFrom(dplyr,
+  "%>%",
+  bind_rows,
+  distinct,
+  filter,
+  pull,
+  rename,
+  select
+)
 importFrom(readr,read_tsv)
-importFrom(stringr,regex)
-importFrom(stringr,str_detect)
-importFrom(stringr,str_starts)
+importFrom(stringr,
+  regex,
+  str_detect,
+  str_starts
+)
 importFrom(tibble,column_to_rownames)
 importFrom(tidyr,separate_rows)
-importFrom(zen4R,ZenodoManager)
-importFrom(zen4R,ZenodoRecord)
+importFrom(zen4R,
+  ZenodoManager,
+  ZenodoRecord
+)
