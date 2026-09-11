@@ -23,3 +23,6 @@
 # AnnotatedBCGEData 0.99.9
 * fixed build error
 * set up testing directory
+
+# AnnotatedBCGEData 0.99.10
+* added unit tests for major functions

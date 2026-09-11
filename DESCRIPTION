@@ -1,6 +1,6 @@
 Package: AnnotatedBCGEData
 Title: 100+ Curated Breast Cancer Gene Expression Data sets
-Version: 0.99.9
+Version: 0.99.10
 Date: 2025-10-16
 Authors@R: 
     c(person("Heidi", "Steadman", 
