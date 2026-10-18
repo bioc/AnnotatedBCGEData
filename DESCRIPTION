@@ -1,6 +1,6 @@
 Package: AnnotatedBCGEData
 Title: 100+ Curated Breast Cancer Gene Expression Data sets
-Version: 0.99.11
+Version: 0.99.12
 Date: 2025-10-16
 Authors@R: 
     c(person("Heidi", "Steadman", 
@@ -66,7 +66,8 @@ Imports:
     zen4R,
     BiocFileCache,
     cli,
-    rlang
+    rlang,
+    readxl
 LazyData: false
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.1.0

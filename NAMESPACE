@@ -19,6 +19,7 @@ importFrom(dplyr,
   select
 )
 importFrom(readr,read_tsv)
+importFrom(readxl,read_excel)
 importFrom(stringr,
   regex,
   str_detect,

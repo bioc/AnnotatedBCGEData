@@ -30,3 +30,6 @@
 # AnnotatedBCGEData 0.99.11
 * updated R version dependency
 * improved code quality of helper functions
+
+# AnnotatedBCGEData 0.99.12
+* updated ontology files and code that pulls them

@@ -25,7 +25,7 @@ term, its associated values, and what the terms and values are in the
 original data. The next file is the dataset metadata file, which was
 generated from pephub data. It contains the metadata about the GEO
 accession or other database where the data came from. This is accessed
-when the user calls searchForDatasets, along with the mapping file. See
+when the user calls getDatasetMetadata, along with the mapping file. See
 below for more detailed information about the specific files. <br><br>
 
 There is a detailed process outlined below for adding more and updating
@@ -65,7 +65,12 @@ vignette would still affect code at the bottom. <br><br>
 For changes made to the vignettes to be reflected in the html document,
 the .Rmd file has to knit. This will run all blocks of code and generate
 the updated version of the document. This can be viewed after the window
-opens when rendering is complete.
+opens when rendering is complete. <br><br>
+
+Further, the vignettes must be able to render at the time the package is
+built. This is a requirement of R packages in general. When changes are
+made, it is essential that the developer ensures the vignette Rmd file
+can still knit.
 
 ## DESCRIPTION
 
@@ -77,7 +82,14 @@ The Suggests fields are packages that are recommended for developers who
 are adding to the package. The most important field is imports, which
 are the packages that the actual code depends on. These are packages
 that must be installed to run the package. These include packages that
-are necessary for the vignette to run.
+are necessary for the vignette to run. <br><br>
+
+The DESCRIPTION also contains the package version number, which must be
+bumped when changes are made and pushed to Bioconductor. See more
+information about this on Bioconductor’s guidelines for package
+developers. When changes are made and the version number is increased,
+the developer should make a note in the NEWS file for users and
+developers who need to know what changed.
 
 ## NAMESPACE and man
 
@@ -94,7 +106,13 @@ will look for the exported functions when it is loaded on the user’s
 machine. The man directory also contains plots and images that are
 created for the vignettes. These files are also not edited by hand.
 These are generated from roxygen2 notation and subsequently running
-devtools::document().
+devtools::document(). <br><br>
+
+It is also a requirement of Bioconductor that the man pages be
+accessible via `?AnnotatedBCGEData`. This required the file
+AnnotatedBCGEData-package.R in the R/ directory. This file can be
+changed as necessary, but developers should ensure they are following
+the correct syntax required by roxygen2.
 
 ## .Rbuildignore and .gitignore
 
@@ -121,6 +139,15 @@ edit other files should be in the devdocs/ directory, like
 datameta_pephub.R and ontology_xl_edit.py. This code was used to
 generate the dataset metadata and the edited mapping ontology, which
 were uploaded to Zenodo.
+
+## tests
+
+The tests/ directory contains the files required for unit testing of the
+major functions. Bioconductor also strongly recommends these files
+exist. The tests will be run at the time of package building, but can
+also be ran from the console. The package used for creating tests is
+testthat. When changes are made or if functions are added, developers
+should run tests to make sure there are no errors.
 
 # Ontology
 
@@ -191,24 +218,31 @@ reusable.
 # Adding Data to the Package
 
 When adding new data to the package, it is important that certain steps
-be followed so that users can correctly access the data. 1. First, the
-data must be uploaded to Zenodo. If you do not have permission to upload
-new data to the repository, reach out to the maintainer. The names of
-the files are intended to be consistent with every uploaded dataset. The
-expression data should be in a file GSEXXXXX.tsv.gz, and the metadata
-should be in a file GSEXXXXXX_metadata.tsv. It is important that the
-names and formats of the files are consistent. Both the expression data
-and metadata should be uploaded in one record to the repository. See the
-other datasets in the repository for examples. 2. Next, the data should
-be added to the package source code. If this is not done, the data will
-not be accessible by the package. The dataset needs to be an additional
-like in the identifiers named list. This list is found at the bottom of
+be followed so that users can correctly access the data. <br><br> 1.
+First, the data must be uploaded to Zenodo. If you do not have
+permission to upload new data to the repository, reach out to the
+maintainer. The names of the files are intended to be consistent with
+every uploaded dataset. The expression data should be in a file
+GSEXXXXX.tsv.gz, and the metadata should be in a file
+GSEXXXXXX_metadata.tsv. It is important that the names and formats of
+the files are consistent. Both the expression data and metadata should
+be uploaded in one record to the repository. See the other datasets in
+the repository for examples.<br><br> 2. Next, the data should be added
+to the package source code. If this is not done, the data will not be
+accessible by the package. The dataset needs to be an additional like in
+the identifiers named list. This list is found at the bottom of
 R/cache-helpers.R. It is absolutely ESSENTIAL that the following steps
 be followed EXACTLY in order for the code to correctly handle the data.
 The name of the dataset should match its EXACT name as found in the
 original location (i.e, GSE1234). The vector in the list that contains
 the identifiers should go in the following order: concept DOI,
 expression data filename, metadata filename. Make sure each identifier
-is entered as a string. The name of the dataset should not be a string.
+in the vector is entered as a string. The name of the dataset should not
+be a string. <br><br> 3. In order for the data to be discoverable by the
+user, it needs to first be added to the mapping file. Talk to
+Dr. Piccolo about the details for this step. When complete, the updated
+mapping file needs to be uploaded to Zenodo as a new version of the old
+record. The record can be found
+[here](https://zenodo.org/records/17545645). <br><br> 4.
 
 # Updating Existing Data

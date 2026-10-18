@@ -19,9 +19,8 @@ utils::globalVariables(c(
     "NCIT_value_code",
     "NCIT_field",
     "NCIT_values",
-    "dataset", 
-    "orig_field",
-    "orig_values",
+    "Original_Field_Name",
+    "Original_Value",
     "Expressions_DOI",
     "Expressions_Filename",
     "Metadata_Filename"
@@ -248,8 +247,8 @@ makeSummarizedExperiment <- function(expressions, features, meta) {
 ## helper function that searches just the field codes
 searchFields <- function(code, df) {
     df_searched <- filter(df, NCIT_field_code %in% code) %>%
-        select(dataset, orig_field, NCIT_field_code) %>%
-        rename(Dataset_ID = dataset, Field = orig_field, Code = NCIT_field_code) %>%
+        select(Dataset_ID, Original_Field_Name, NCIT_field_code) %>%
+        rename(Code = NCIT_field_code) %>%
         distinct()
     return (df_searched)
 }
@@ -257,9 +256,9 @@ searchFields <- function(code, df) {
 ## helper function that searches just the value codes
 searchValues <- function(code, df) {
     df_searched <- filter(df, NCIT_value_code %in% code) %>%
-        select(dataset, orig_field, NCIT_field_code, orig_values, NCIT_value_code) %>%
-        rename(Dataset_ID = dataset, Field = orig_field, Field_Code = NCIT_field_code,
-               Original_Value = orig_values, Code = NCIT_value_code) %>%
+        select(Dataset_ID, Original_Field_Name, NCIT_field_code, Original_Value,
+               NCIT_value_code) %>%
+        rename(Field_Code = NCIT_field_code, Code = NCIT_value_code) %>%
         distinct()
     return (df_searched)
 }

@@ -11,7 +11,7 @@
 #' @examples searchForDatasetsByField("C16149")
 #' @export
 searchForDatasetsByField <- function(code) {
-    filtered_path <- file.path(tempdir(), 'filtered_mapped_data.tsv.gz')
+    filtered_path <- file.path(tempdir(), 'filtered_mapped_ontology.tsv.gz')
     
     if (!file.exists(filtered_path)) {
         downloadZenFile('10.5281/zenodo.17583904', tempdir())

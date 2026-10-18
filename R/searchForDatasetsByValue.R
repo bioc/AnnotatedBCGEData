@@ -11,13 +11,14 @@
 #' @examples searchForDatasetsByValue("C15496")
 #' @export
 searchForDatasetsByValue <- function(code) {
-    filtered_path <- file.path(tempdir(), 'filtered_mapped_data.tsv.gz')
+    filtered_path <- file.path(tempdir(), 'filtered_mapped_ontology.tsv.gz')
     
     if (!file.exists(filtered_path)) {
         downloadZenFile('10.5281/zenodo.17583904', tempdir())
     }
     
     filtered_data <- read_tsv(filtered_path)
+    print(filtered_data)
     df <- searchValues(code, filtered_data)
     return(df)
 }

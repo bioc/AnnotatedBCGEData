@@ -1,18 +1,20 @@
 #' @importFrom stringr regex str_detect
-#' @importFrom dplyr rename filter select pull %>% bind_rows
+#' @importFrom dplyr rename filter select pull %>% bind_rows mutate
 #' @importFrom tidyr separate_rows
+#' @importFrom readxl read_excel
 
 utils::globalVariables(c(
-    "code",
-    "Preferred Label",
+    "Code",
+    "Preferred_Label",
     "Synonyms",
     "URI",
     "Definitions",
-    "label"
+    "label",
+    "Name"
 ))
 
-NCIT_identifiers <- c("10.5281/zenodo.17488901", 
-                      "NCIT_definitions_filtered.tsv.gz")
+NCIT_identifiers <- c("10.5281/zenodo.17545644", 
+                      "Metadata_Mappings_Final_10_18.xlsx")
 
 #' Function that searches for ontology terms.
 #' 
@@ -43,7 +45,7 @@ searchOntologyTerms <- function(term, term_type="Name") {
     if (!file.exists(def_path)) {
         downloadZenFile(NCIT_identifiers[1], tempdir())
     }
-    NCIT_defs <- read_tsv(def_path)
+    NCIT_defs <- read_excel(def_path, sheet='Ontology_Terms')
     
     if (term_type == "Name") {
         df <- searchNames(term, NCIT_defs)
@@ -55,9 +57,6 @@ searchOntologyTerms <- function(term, term_type="Name") {
         df <- searchDefinition(term, NCIT_defs)
     }
     
-    df <- df %>%
-        rename(Name = `Preferred Label`) %>%
-        rename(Code = code)
     return(df)
 }
 
@@ -65,29 +64,28 @@ searchOntologyTerms <- function(term, term_type="Name") {
 ## helper function 1: searchNames, searches through Names in definitions df
 
 searchNames <- function(term, df) {
-    ncit_names <- rename(df, label = `Preferred Label`) %>%
-        select(label, code)
+    ncit_names <- df %>%
+        select(Name = Preferred_Label, Code)
     
-    ncit_synonyms <- rename(df, label = Synonyms) %>%
-        select(label, code) %>%
-        separate_rows(label, sep = "\\|")
+    ncit_synonyms <- df %>%
+        select(Name = Synonyms, Code) %>%
+        separate_rows(Name, sep = "\\|")
     
-    names_syns <- bind_rows(ncit_names, ncit_synonyms) %>%
-        filter(str_detect(label, regex(term, ignore_case=TRUE))) %>%
-        pull(code)
+    codes <- bind_rows(ncit_names, ncit_synonyms) %>%
+        filter(str_detect(Name, regex(term, ignore_case = TRUE))) %>%
+        pull(Code) %>%
+        unique()
     
-    codes <- unique(names_syns)
-    
-    df_searched <- filter(df, code %in% codes)
-    
-    return(df_searched)
+    filter(df, Code %in% codes)
 }
 
 
 ## helper function 2: searchURI, searches through URIs in definitions df
 
 searchURIs <- function(term, df) {
-    df_searched <- filter(df, URI==term) 
+    df_searched <- df %>%
+        mutate(URI = paste0("http://purl.obolibrary.org/obo/NCIT_", Code)) %>%
+        filter(URI==term)
     return(df_searched)
 }
 
@@ -95,7 +93,7 @@ searchURIs <- function(term, df) {
 ## helper function 3: searchCodes, searches through codes in definitions df
 
 searchCodes <- function(term, df) {
-    df_searched <- filter(df, code==term)
+    df_searched <- filter(df, Code==term)
     return(df_searched)
 }
 
