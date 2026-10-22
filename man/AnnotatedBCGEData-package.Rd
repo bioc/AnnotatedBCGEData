@@ -57,6 +57,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Stephen Piccolo \email{stephen_piccolo@byu.edu} (\href{https://orcid.org/0000-0003-2001-5640}{ORCID})
   \item Heidi Steadman \email{hstead05@byu.edu}
   \item Shu-Fei Lo \email{shufeilo@byu.edu}
 }

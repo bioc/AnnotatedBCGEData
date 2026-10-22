@@ -33,3 +33,6 @@
 
 # AnnotatedBCGEData 0.99.12
 * updated ontology files and code that pulls them
+
+# AnnotatedBCGEData 0.99.13
+* updated creator list in DESCRIPTION
